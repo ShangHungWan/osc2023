@@ -20,9 +20,14 @@ start.o: start.S
 %.o: %.c
 	aarch64-linux-gnu-gcc $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-kernel8.img: start.o $(OBJS)
+kernel8.img: start.o $(OBJS) initramfs.cpio
 	aarch64-linux-gnu-ld start.o $(OBJS) $(LIBRARY_OBJS) -T link.ld -o kernel8.elf
 	aarch64-linux-gnu-objcopy -O binary kernel8.elf kernel8.img
+
+initramfs.cpio:
+	cd rootfs && find . | cpio -o -H newc > ../initramfs.cpio
+	cp initramfs.cpio ${CPIO}
+	rm initramfs.cpio
 
 clean:
 	rm kernel8.elf kernel8.img *.o 2> /dev/null || true

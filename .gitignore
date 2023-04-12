@@ -2,3 +2,5 @@
 *.elf
 *.o
 .gdb_history
+initramfs.cpio
+user_prog
