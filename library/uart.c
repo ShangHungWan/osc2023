@@ -1,5 +1,5 @@
 #include "gpio.h"
-#include "aux.h"
+#include "mmio.h"
 #include "helper.h"
 
 void wait_cycles(unsigned int number_of_cycle)
