@@ -11,4 +11,5 @@ static char *cpio_base;
 
 void init_cpio(char *address);
 void list_files();
-void print_file(char *command);
+void print_file(char *filename);
+char *get_file_base(char *address, unsigned int *fileSize, unsigned int *nameSize);

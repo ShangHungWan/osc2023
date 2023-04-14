@@ -12,7 +12,7 @@ LIBRARY_INCLUDE = -I $(LIBRARY_PATH)/include
 LIBRARY_SRCS = $(LIBRARY_PATH)/*.c
 LIBRARY_OBJS = $(LIBRARY_SRCS:.c=.o)
 
-all: clean kernel8.img user_prog.img
+all: clean user_prog.img kernel8.img
 
 start.o: start.S
 	aarch64-linux-gnu-gcc $(CFLAGS) -c start.S -o start.o
@@ -20,7 +20,10 @@ start.o: start.S
 %.o: %.c
 	aarch64-linux-gnu-gcc $(CFLAGS) $(INCLUDES) -c $< -o $@
 
-kernel8.img: start.o $(OBJS) initramfs.cpio
+$(LIBRARY_OBJS):
+	cd ../library && make
+
+kernel8.img: start.o $(OBJS) initramfs.cpio $(LIBRARY_OBJS)
 	aarch64-linux-gnu-ld start.o $(OBJS) $(LIBRARY_OBJS) -T link.ld -o kernel8.elf
 	aarch64-linux-gnu-objcopy -O binary kernel8.elf kernel8.img
 
@@ -32,13 +35,13 @@ initramfs.cpio:
 user_prog.o: user_prog.S
 	aarch64-linux-gnu-gcc $(CFLAGS) -c user_prog.S -o user_prog.o
 
-user_prog.img: user_prog.o $(OBJS)
+user_prog.img: user_prog.o $(OBJS) $(LIBRARY_OBJS)
 	aarch64-linux-gnu-ld user_prog.o $(OBJS) $(LIBRARY_OBJS) -T link.ld -o user_prog.elf
 	aarch64-linux-gnu-objcopy -O binary user_prog.elf user_prog.img
 	cp user_prog.img rootfs/user_prog
 
 clean:
-	rm *.elf *.img *.o 2> /dev/null || true
+	rm *.elf *.img *.o rootfs/user_prog ../library/*.o 2> /dev/null || true
 
 run:
 	qemu-system-aarch64 -M raspi3b -kernel kernel8.img -serial null -serial stdio -display none -initrd $(CPIO) -dtb $(DTB)

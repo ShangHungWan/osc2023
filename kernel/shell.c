@@ -6,13 +6,14 @@
 
 void print_help_menu()
 {
-    uart_puts("help     : print this help menu.\n");
-    uart_puts("hello    : print hello, world.\n");
-    uart_puts("reboot   : reboot the device.\n");
-    uart_puts("revision : print board revision.\n");
-    uart_puts("memory   : print memory information.\n");
-    uart_puts("ls       : list files in current directory.\n");
-    uart_puts("cat      : print file.\n");
+    uart_puts("help                 : print this help menu.\n");
+    uart_puts("hello                : print \"hello, world.\"\n");
+    uart_puts("reboot               : reboot the device.\n");
+    uart_puts("revision             : print board revision.\n");
+    uart_puts("memory               : print memory information.\n");
+    uart_puts("ls                   : list files in current directory.\n");
+    uart_puts("cat <filename>       : print file.\n");
+    uart_puts("execute <filename>   : execute program.\n");
 }
 
 void print_hello_world()
@@ -61,7 +62,17 @@ void operate_command(char *command)
     }
     else if (string_start_with(command, CAT))
     {
-        print_file(command);
+        char *filename = 0;
+        string_split(command, ' ', filename);
+
+        print_file(filename);
+    }
+    else if (string_start_with(command, EXECUTE))
+    {
+        char *filename = 0;
+        string_split(command, ' ', filename);
+
+        execute_file(filename);
     }
     else if (string_length(command) == 0)
     {

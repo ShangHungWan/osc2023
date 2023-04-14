@@ -6,6 +6,7 @@
 #define MEMORY "memory"
 #define LS "ls"
 #define CAT "cat "
+#define EXECUTE "execute "
 
 #define BACKSPACE 0x7f
 

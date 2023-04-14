@@ -14,6 +14,9 @@ _start:
     mov     x22, x2
     mov     x23, x3
 
+    bl      from_el2_to_el1
+
+init_stack:
     ldr     x28, =_start
     mov     sp, x28
 
@@ -32,6 +35,14 @@ run_main:
     mov     x2, x22
     mov     x3, x23
     b       main
+
+from_el2_to_el1:
+    mov     x0, (1 << 31) // EL1 uses aarch64
+    msr     hcr_el2, x0
+    mov     x0, 0x3c5 // EL1h (SPSel = 1) with interrupt disabled
+    msr     spsr_el2, x0
+    msr     elr_el2, lr
+    eret    // return to EL1
 
 hang:
     wfe

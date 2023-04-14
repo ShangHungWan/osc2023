@@ -58,48 +58,22 @@ unsigned int get_remaining_padding(unsigned int size, unsigned int paddingSize)
 
 void list_files()
 {
-    char *base = cpio_base;
+    char *address = cpio_base;
+    unsigned int fileSize = 0;
+    unsigned int nameSize = 0;
 
-    while (check_magic_number(base))
+    while (address = get_file_base(address, &fileSize, &nameSize))
     {
-        base += SIZE_OF_MAGIC + SIZE_OF_FEILD * 6; // skip not used parts
-
-        unsigned int fileSize = get_number_from_ascii(base);
-
-        // padding NULL
-        char remainingPadding = get_remaining_padding(fileSize, PADDING_MULTIPLE);
-        fileSize += remainingPadding;
-
-        base += SIZE_OF_FEILD * 5; // skip not used parts
-
-        unsigned int nameSize = get_number_from_ascii(base);
-
-        // padding NULL
-        remainingPadding = get_remaining_padding((nameSize + SIZE_OF_MAGIC), PADDING_MULTIPLE);
-        nameSize += remainingPadding;
-
-        base += SIZE_OF_FEILD * 2; // skip not used parts
-
-        if (string_compare(END_IDENTIFIER, base))
-        {
-            break;
-        }
-
-        // print pathname
-        uart_puts(base);
+        uart_puts(address);
         uart_newline();
 
-        base += nameSize;
-        base += fileSize;
+        address += nameSize;
+        address += fileSize;
     }
 }
 
-void print_file(char *command)
+void print_file(char *filename)
 {
-    char found = 0;
-    char *filename = 0x0;
-    string_split(command, ' ', filename);
-
     if (string_compare(NOW_DIRECTORY, filename) || string_compare(PREVIOUS_DIRECTORY, filename))
     {
         uart_puts("Could not print directory!\n");
@@ -107,55 +81,69 @@ void print_file(char *command)
         return;
     }
 
-    char *base = cpio_base;
+    char *address = cpio_base;
+    unsigned int fileSize = 0;
+    unsigned int nameSize = 0;
+    char found = 0;
 
-    while (check_magic_number(base))
+    while (address = get_file_base(address, &fileSize, &nameSize))
     {
-        base += SIZE_OF_MAGIC + SIZE_OF_FEILD * 6; // skip not used parts
-
-        unsigned int fileSize = get_number_from_ascii(base);
-
-        // padding NULL
-        char remainingPadding = get_remaining_padding(fileSize, PADDING_MULTIPLE);
-        fileSize += remainingPadding;
-
-        base += SIZE_OF_FEILD * 5; // skip not used parts
-
-        unsigned int nameSize = get_number_from_ascii(base);
-
-        // padding NULL
-        remainingPadding = get_remaining_padding((nameSize + SIZE_OF_MAGIC), PADDING_MULTIPLE);
-        nameSize += remainingPadding;
-
-        base += SIZE_OF_FEILD * 2; // skip not used parts
-
-        if (string_compare(END_IDENTIFIER, base))
+        if (!string_compare(filename, address))
         {
-            if (!found)
-            {
-                uart_puts("Could not find file: ");
-                uart_puts(filename);
-                uart_newline();
-            }
-            break;
-        }
-
-        if (!string_compare(filename, base))
-        {
-            base += nameSize;
-            base += fileSize;
+            address += nameSize;
+            address += fileSize;
             continue;
         }
 
         found = 1;
 
         uart_puts("Filename: ");
-        uart_puts(base);
+        uart_puts(address);
         uart_newline();
-        base += nameSize;
+        address += nameSize;
 
-        uart_puts(base);
+        uart_puts(address);
         uart_newline();
-        base += fileSize;
+        address += fileSize;
     }
+
+    if (!found)
+    {
+        uart_puts("Could not find file: ");
+        uart_puts(filename);
+        uart_newline();
+    }
+}
+
+char *get_file_base(char *address, unsigned int *fileSize, unsigned int *nameSize)
+{
+    if (!check_magic_number(address))
+    {
+        return 0;
+    }
+
+    address += SIZE_OF_MAGIC + SIZE_OF_FEILD * 6; // skip not used parts
+
+    *fileSize = get_number_from_ascii(address);
+
+    // padding NULL
+    unsigned int remainingPadding = get_remaining_padding(*fileSize, PADDING_MULTIPLE);
+    *fileSize += remainingPadding;
+
+    address += SIZE_OF_FEILD * 5; // skip not used parts
+
+    *nameSize = get_number_from_ascii(address);
+
+    // padding NULL
+    remainingPadding = get_remaining_padding((*nameSize + SIZE_OF_MAGIC), PADDING_MULTIPLE);
+    *nameSize += remainingPadding;
+
+    address += SIZE_OF_FEILD * 2; // skip not used parts
+
+    if (string_compare(END_IDENTIFIER, address))
+    {
+        return 0;
+    }
+
+    return address;
 }
