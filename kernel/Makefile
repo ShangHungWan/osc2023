@@ -1,6 +1,6 @@
 SRCS = $(wildcard *.c)
 OBJS = $(SRCS:.c=.o)
-CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles
+CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles -g
 DTB = "../shares/bcm2710-rpi-3-b-plus.dtb"
 CPIO = "../shares/initramfs.cpio"
 
@@ -14,6 +14,9 @@ LIBRARY_OBJS = $(LIBRARY_SRCS:.c=.o)
 
 all: clean user_prog.img kernel8.img
 
+exec.o: exec.S
+	aarch64-linux-gnu-gcc $(CFLAGS) -c exec.S -o exec.o
+
 start.o: start.S
 	aarch64-linux-gnu-gcc $(CFLAGS) -c start.S -o start.o
 
@@ -23,8 +26,8 @@ start.o: start.S
 $(LIBRARY_OBJS):
 	cd ../library && make
 
-kernel8.img: start.o $(OBJS) initramfs.cpio $(LIBRARY_OBJS)
-	aarch64-linux-gnu-ld start.o $(OBJS) $(LIBRARY_OBJS) -T link.ld -o kernel8.elf
+kernel8.img: start.o exec.o $(OBJS) initramfs.cpio $(LIBRARY_OBJS)
+	aarch64-linux-gnu-ld start.o exec.o $(OBJS) $(LIBRARY_OBJS) -T link.ld -o kernel8.elf
 	aarch64-linux-gnu-objcopy -O binary kernel8.elf kernel8.img
 
 initramfs.cpio:
@@ -35,8 +38,8 @@ initramfs.cpio:
 user_prog.o: user_prog.S
 	aarch64-linux-gnu-gcc $(CFLAGS) -c user_prog.S -o user_prog.o
 
-user_prog.img: user_prog.o $(OBJS) $(LIBRARY_OBJS)
-	aarch64-linux-gnu-ld user_prog.o $(OBJS) $(LIBRARY_OBJS) -T link.ld -o user_prog.elf
+user_prog.img: user_prog.o
+	aarch64-linux-gnu-ld user_prog.o -T link.ld -o user_prog.elf
 	aarch64-linux-gnu-objcopy -O binary user_prog.elf user_prog.img
 	cp user_prog.img rootfs/user_prog
 

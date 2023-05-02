@@ -61,7 +61,6 @@ char dt_check_magic_number(char *address)
 
 void dt_tranverse(char *address, char *target_property, void (*callback)(char *))
 {
-    unsigned int temp;
     unsigned int offset_struct, offset_strings;
 
     if (!dt_check_magic_number(address))

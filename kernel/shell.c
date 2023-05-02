@@ -14,6 +14,7 @@ void print_help_menu()
     uart_puts("ls                   : list files in current directory.\n");
     uart_puts("cat <filename>       : print file.\n");
     uart_puts("execute <filename>   : execute program.\n");
+    uart_puts("time                 : show time since booted.\n");
 }
 
 void print_hello_world()
@@ -59,6 +60,10 @@ void operate_command(char *command)
     else if (string_compare(LS, command))
     {
         list_files();
+    }
+    else if (string_compare(TIME, command))
+    {
+        timer_print_counter();
     }
     else if (string_start_with(command, CAT))
     {

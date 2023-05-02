@@ -1,3 +1,9 @@
+#define read_register(r) ({      \
+    unsigned int __val;          \
+    asm volatile("mrs %0, " #r   \
+                 : "=r"(__val)); \
+    __val;                       \
+})
 int min(int n1, int n2);
 int string_length(char *s);
 char string_compare(char *s1, char *s2);

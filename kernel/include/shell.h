@@ -7,6 +7,7 @@
 #define LS "ls"
 #define CAT "cat "
 #define EXECUTE "execute "
+#define TIME "time"
 
 #define BACKSPACE 0x7f
 

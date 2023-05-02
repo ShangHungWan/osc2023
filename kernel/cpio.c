@@ -1,6 +1,8 @@
 #include "cpio.h"
 #include "uart.h"
 #include "helper.h"
+#include "exec.h"
+#include "malloc.h"
 
 void init_cpio(char *address)
 {
@@ -38,8 +40,7 @@ unsigned int get_number_from_ascii(char *address)
         {
             value = address[i];
         }
-
-        filesize |= value << ((7 - i) * 16);
+        filesize |= value << ((7 - i) * 4);
     }
 
     return filesize;
@@ -81,38 +82,55 @@ void print_file(char *filename)
         return;
     }
 
-    char *address = cpio_base;
+    char *address = 0;
     unsigned int fileSize = 0;
     unsigned int nameSize = 0;
-    char found = 0;
 
-    while (address = get_file_base(address, &fileSize, &nameSize))
+    address = find_file(filename, &fileSize, &nameSize);
+    if (address == 0)
     {
-        if (!string_compare(filename, address))
+        uart_puts("Cannot find file\n");
+        uart_newline();
+
+        return;
+    }
+
+    uart_puts("Filename: ");
+    uart_puts(address);
+    uart_newline();
+    address += nameSize;
+
+    uart_puts(address);
+    uart_newline();
+    address += fileSize;
+}
+
+char *find_file(char *filename, unsigned int *fileSize, unsigned int *nameSize)
+{
+    if (string_compare(NOW_DIRECTORY, filename) || string_compare(PREVIOUS_DIRECTORY, filename))
+    {
+        uart_puts("Could not print directory!\n");
+        return 0;
+    }
+
+    char *address = cpio_base;
+    unsigned int tmpNameSize = 0;
+    unsigned int tmpFileSize = 0;
+
+    while (address = get_file_base(address, &tmpFileSize, &tmpNameSize))
+    {
+        if (string_compare(filename, address))
         {
-            address += nameSize;
-            address += fileSize;
-            continue;
+            *nameSize = tmpNameSize;
+            *fileSize = tmpFileSize;
+            return address;
         }
 
-        found = 1;
-
-        uart_puts("Filename: ");
-        uart_puts(address);
-        uart_newline();
-        address += nameSize;
-
-        uart_puts(address);
-        uart_newline();
-        address += fileSize;
+        address += tmpNameSize;
+        address += tmpFileSize;
     }
 
-    if (!found)
-    {
-        uart_puts("Could not find file: ");
-        uart_puts(filename);
-        uart_newline();
-    }
+    return 0;
 }
 
 char *get_file_base(char *address, unsigned int *fileSize, unsigned int *nameSize)
@@ -146,4 +164,31 @@ char *get_file_base(char *address, unsigned int *fileSize, unsigned int *nameSiz
     }
 
     return address;
+}
+
+void execute_file(char *filename)
+{
+    unsigned int fileSize = 0;
+    unsigned int nameSize = 0;
+
+    char *address = find_file(filename, &fileSize, &nameSize);
+
+    if (address == 0)
+    {
+        uart_puts("Cannot find file!\n");
+        uart_newline();
+        return;
+    }
+
+    char *filePointer = address + nameSize;
+    char *stack = malloc(STACK_SIZE);
+
+    if (stack == 0)
+    {
+        uart_puts("Cannot execute file!\n");
+        uart_newline();
+        return;
+    }
+
+    exec_user_prog(filePointer, stack);
 }
